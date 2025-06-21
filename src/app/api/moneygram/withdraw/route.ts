@@ -1,30 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createStellarAccountWithTrustline } from "@/lib/stellar/account";
 import { authenticateWithMoneyGram } from "@/lib/moneygram/auth";
 import { initiateMoneyGramWithdrawal, monitorMoneyGramTransaction } from "@/lib/moneygram/transactions";
 import { sendUSDCToDestination } from "@/lib/stellar/payments";
 
-/**
- * Endpoint principal para flujo completo: crear cuenta + retiro MoneyGram
- * 
- * Este endpoint combina:
- * 1. Creación de cuenta Stellar con trustline USDC
- * 2. Autenticación SEP-10 con MoneyGram
- * 3. Inicio de transacción de retiro
- * 4. Monitoreo hasta que esté lista
- * 5. Envío de USDC a MoneyGram
- */
 export async function POST(request: NextRequest) {
     try {
-        const { pin, amount, userId } = await request.json();
+        const { amount, userId } = await request.json();
         
-        if (!pin) {
-            return NextResponse.json({ 
-                success: false, 
-                error: 'PIN es requerido' 
-            }, { status: 400 });
-        }
-
         if (!amount) {
             return NextResponse.json({ 
                 success: false, 
@@ -40,16 +22,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Verificar variables de entorno
-        const funderSecretKey = process.env.STELLAR_FUNDER_SECRET_KEY;
         const authSecretKey = process.env.MONEYGRAM_AUTH_SECRET_KEY;
         const fundsSecretKey = process.env.MONEYGRAM_FUNDS_SECRET_KEY;
-
-        if (!funderSecretKey) {
-            return NextResponse.json({ 
-                success: false, 
-                error: 'STELLAR_FUNDER_SECRET_KEY no está configurada' 
-            }, { status: 500 });
-        }
 
         if (!authSecretKey) {
             return NextResponse.json({ 
@@ -65,22 +39,16 @@ export async function POST(request: NextRequest) {
             }, { status: 500 });
         }
 
-        // 1. Crear cuenta Stellar con trustline USDC
-        const accountResult = await createStellarAccountWithTrustline(pin, funderSecretKey);
-        if (!accountResult.success) {
-            return NextResponse.json(accountResult, { status: 400 });
-        }
-
-        // 2. Autenticar con MoneyGram
+        // 1. Autenticar con MoneyGram
         const authToken = await authenticateWithMoneyGram(authSecretKey);
 
-        // 3. Iniciar transacción de retiro
+        // 2. Iniciar transacción de retiro
         const { id: transactionId, url } = await initiateMoneyGramWithdrawal(authToken, amount, userId, fundsSecretKey);
 
-        // 4. Monitorear transacción hasta que esté lista
+        // 3. Monitorear transacción hasta que esté lista
         const transactionInfo = await monitorMoneyGramTransaction(authToken, transactionId);
 
-        // 5. Enviar USDC a MoneyGram
+        // 4. Enviar USDC a MoneyGram
         if (!transactionInfo.destination || !transactionInfo.amount || !transactionInfo.memo) {
             throw new Error('Información de transacción incompleta');
         }
@@ -94,7 +62,6 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            stellar: accountResult.stellar,
             moneygram: {
                 transactionId,
                 url,
@@ -104,7 +71,7 @@ export async function POST(request: NextRequest) {
         });
 
     } catch (error) {
-        console.error('Error en endpoint principal MoneyGram:', error);
+        console.error('Error en endpoint withdraw:', error);
         return NextResponse.json({ 
             success: false, 
             error: error instanceof Error ? error.message : 'Error interno del servidor' 
