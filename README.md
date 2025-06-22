@@ -1,5 +1,11 @@
 # 🌉 Chipi Offramp
 
+Team
+Arturo Castanon - arturo.spameame18@gmail.com 
+Erik Valle - erik.valle@gmail.com
+
+## 💻 Project Description:
+
 This project enables a seamless **offramp from the Arbitrum blockchain to the Stellar network**, allowing users to convert USDC on Arbitrum into **cash via MoneyGram**.
 
 ## 🚀 What does it do?
@@ -35,7 +41,7 @@ RPC_URL=https://arb-mainnet.g.alchemy.com/v2/...
 PRIVATE_KEY=0x...
 USDC_ADDRESS=0x... # USDC token on Arbitrum
 ALLBRIDGE_CONTRACT=0x9Ce3447B58D58e8602B7306316A5fF011B92d189
-
+```
 
 
 -------------------------------------------------------------------------------
