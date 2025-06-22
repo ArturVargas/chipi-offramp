@@ -4,6 +4,8 @@ Team
 Arturo Castanon - arturo.spameame18@gmail.com 
 Erik Valle - erik.valle@gmail.com
 
+[Pitch deck](https://docs.google.com/presentation/d/1p2FgD1SHqlQmigM95F2oOwF1iWseA-BqlOVMiwgstwU/edit?usp=sharing)
+
 ## 💻 Project Description:
 
 This project enables a seamless **offramp from the Arbitrum blockchain to the Stellar network**, allowing users to convert USDC on Arbitrum into **cash via MoneyGram**.
