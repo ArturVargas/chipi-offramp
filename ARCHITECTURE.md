@@ -1,49 +1,49 @@
-# Arquitectura del Sistema Chipi Offramp
+# Chipi Offramp System Architecture
 
 ## Main Modules
 
 ### 1. Stellar Account (`src/lib/stellar/account.ts`)
-**Responsability**: Create and Manage Stellar Accounts
-- Crear nuevas cuentas Stellar
-- Fondear cuentas con XLM mínimo
-- Establecer trustlines para USDC
-- Encriptar claves privadas
+**Responsibility**: Create and manage Stellar accounts
+- Create new Stellar accounts
+- Fund accounts with minimum XLM
+- Set USDC trustlines
+- Encrypt private keys
 
-**Funciones principales**:
-- `createStellarAccountWithTrustline()`: Crea cuenta + trustline USDC
+**Key Functions**:
+- `createStellarAccountWithTrustline()`: Creates a new account and sets a USDC trustline
 
 ### 2. Stellar Payments (`src/lib/stellar/payments.ts`)
-**Responsabilidad**: Send USDC payments on Stellar
-- Enviar USDC a cuentas destino
-- Manejar memos de transacción
-- Gestionar fees de red
+**Responsibility**: Send USDC payments on the Stellar network
+- Send USDC to destination accounts
+- Handle transaction memos
+- Manage network fees
 
-**Funciones principales**:
-- `sendUSDCToDestination()`: Send USDC with memo
+**Key Functions**:
+- `sendUSDCToDestination()`: Sends USDC with a memo
 
 ### 3. MoneyGram Auth (`src/lib/moneygram/auth.ts`)
-**Responsabilidad**: SEP-10 Auth with MoneyGram
-- Autenticación usando la librería oficial
-- Manejo de tokens de autenticación
-- Configuración de testnet/producción
+**Responsibility**: SEP-10 authentication with MoneyGram
+- Authenticate using the official library
+- Manage authentication tokens
+- Configure testnet/production environment
 
-**Funciones principales**:
-- `authenticateWithMoneyGram()`: SEP-10 Auth
+**Key Functions**:
+- `authenticateWithMoneyGram()`: Perform SEP-10 authentication
 
 ### 4. MoneyGram Transactions (`src/lib/moneygram/transactions.ts`)
-**Responsabilidad**: SEP-24 Transactions with MoneyGram
-- Iniciar transacciones de retiro
-- Monitorear estado de transacciones
-- Manejar callbacks de estado
+**Responsibility**: SEP-24 withdrawals with MoneyGram
+- Initiate withdrawal transactions
+- Monitor transaction statuses
+- Handle status callbacks
 
-**Funciones principales**:
-- `initiateMoneyGramWithdrawal()`: Inicia retiro
-- `monitorMoneyGramTransaction()`: Monitorea transacción
+**Key Functions**:
+- `initiateMoneyGramWithdrawal()`: Initiates withdrawal
+- `monitorMoneyGramTransaction()`: Monitors transaction status
 
-## Endpoints API
+## API Endpoints
 
 ### 1. `/api/stellar/create-account` (POST)
-**Propósito**: Crear cuenta Stellar con trustline USDC
+**Purpose**: Create a Stellar account with a USDC trustline
 ```json
 {
   "pin": "1234"
@@ -51,7 +51,7 @@
 ```
 
 ### 2. `/api/moneygram/withdraw` (POST)
-**Propósito**: Iniciar retiro con MoneyGram (sin crear cuenta)
+**Purpose**: Initiate a MoneyGram withdrawal (no account creation)
 ```json
 {
   "amount": "100",
@@ -60,13 +60,13 @@
 ```
 
 ### 3. `/api/moneygram/status` (GET)
-**Propósito**: Consultar estado de transacción
+**Purpose**: Check transaction status
 ```
 /api/moneygram/status?transactionId=abc123
 ```
 
 ### 4. `/api/moneygram` (POST)
-**Propósito**: Flujo completo (crear cuenta + retiro)
+**Purpose**: Full flow (account creation + withdrawal)
 ```json
 {
   "pin": "1234",
@@ -75,9 +75,9 @@
 }
 ```
 
-## Configuración
+## Configuration
 
-### Variables de Entorno Requeridas
+### Required Environment Variables
 ```env
 # Stellar
 STELLAR_FUNDER_SECRET_KEY=your_funder_secret_key
@@ -87,61 +87,61 @@ MONEYGRAM_AUTH_SECRET_KEY=your_auth_secret_key
 MONEYGRAM_FUNDS_SECRET_KEY=your_funds_secret_key
 ```
 
-### Configuración Centralizada (`src/lib/config.ts`)
-- Configuración de Stellar (URLs, USDC, etc.)
-- Configuración de MoneyGram (testnet/producción)
-- Configuración de la aplicación
+### Centralized Configuration (`src/lib/config.ts`)
+- Stellar settings (URLs, USDC config, etc.)
+- MoneyGram settings (testnet/production)
+- App-wide configuration
 
-## Flujo de Transacción Completo
+## Full Transaction Flow
 
-1. **Crear Cuenta Stellar**
-   - Generar keypair
-   - Fondear con XLM mínimo
-   - Crear trustline USDC
-   - Encriptar clave privada
+1. **Create Stellar Account**
+   - Generate keypair
+   - Fund with minimum XLM
+   - Create USDC trustline
+   - Encrypt private key
 
-2. **Autenticar con MoneyGram**
-   - Autenticación SEP-10
-   - Obtener token de autenticación
+2. **Authenticate with MoneyGram**
+   - SEP-10 authentication
+   - Get access token
 
-3. **Iniciar Retiro**
-   - Crear transacción SEP-24
-   - Obtener ID y URL de transacción
+3. **Initiate Withdrawal**
+   - Create SEP-24 transaction
+   - Get transaction ID and interactive URL
 
-4. **Monitorear Estado**
-   - Esperar estado "pending_user_transfer_start"
-   - Obtener cuenta destino y memo
+4. **Monitor Status**
+   - Wait for `pending_user_transfer_start` status
+   - Retrieve destination account and memo
 
-5. **Enviar USDC**
-   - Enviar USDC a cuenta de MoneyGram
-   - Incluir memo requerido
+5. **Send USDC**
+   - Send USDC to MoneyGram account
+   - Include required memo
 
-## Beneficios de la Arquitectura
+## Architecture Benefits
 
-### ✅ Modularidad
-- Cada módulo tiene una responsabilidad específica
-- Fácil de testear individualmente
-- Reutilizable en diferentes contextos
+### ✅ Modularity
+- Each module has a single responsibility
+- Easy to test individually
+- Reusable across contexts
 
-### ✅ Mantenibilidad
-- Código limpio y bien documentado
-- Separación clara de responsabilidades
-- Fácil de debuggear
+### ✅ Maintainability
+- Clean and well-documented codebase
+- Clear separation of concerns
+- Easier to debug
 
-### ✅ Escalabilidad
-- Endpoints específicos para cada funcionalidad
-- Configuración centralizada
-- Fácil agregar nuevas funcionalidades
+### ✅ Scalability
+- Dedicated endpoints for each feature
+- Centralized configuration
+- New features are easy to integrate
 
-### ✅ Flexibilidad
-- Puedes usar endpoints individuales o el flujo completo
-- Fácil cambiar entre testnet y producción
-- Configuración dinámica
+### ✅ Flexibility
+- Use individual endpoints or the full flow
+- Easily switch between testnet and production
+- Dynamic setup options
 
-## Próximos Pasos
+## Next Steps
 
-1. **Testing**: Crear tests unitarios para cada módulo
-2. **WebSockets**: Implementar monitoreo en tiempo real
-3. **Logging**: Agregar sistema de logs estructurado
-4. **Métricas**: Implementar métricas de performance
-5. **Documentación**: Documentar APIs con OpenAPI/Swagger 
+1. **Testing**: Add unit tests for each module
+2. **WebSockets**: Implement real-time monitoring
+3. **Logging**: Add structured logging
+4. **Metrics**: Include performance metrics
+5. **Documentation**: Document API with OpenAPI/Swagger
