@@ -1,39 +1,33 @@
-import { Wallet, SigningKeypair } from "@stellar/typescript-wallet-sdk";
-
-// Configuración de MoneyGram
-const MGI_ACCESS_HOST = "extmgxanchor.moneygram.com"; // Testnet
-// const MGI_ACCESS_HOST = "stellar.moneygram.com"; // Production
+import { Wallet, SigningKeypair } from '@stellar/typescript-wallet-sdk';
+import { ANCHOR_HOST } from '@/lib/config';
 
 /**
- * SEP-10 Auth with MoneyGram using the official library
+ * Authenticates with the configured anchor (SDF Test Anchor or MoneyGram)
+ * Uses SEP-10 authentication protocol
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const authenticateWithMoneyGram = async (authSecretKey: string): Promise<any> => {
+export async function authenticateWithMoneyGram(authSecretKey: string): Promise<any> {
     try {
-        if (!authSecretKey) {
-            throw new Error('AUTH_SECRET_KEY is not configured');
-        }
-
-        console.log('Starting SEP-10 Auth with MoneyGram...');
+        console.log(`Authenticating with anchor: ${ANCHOR_HOST}`);
         
-        // Create wallet and anchor
+        // Create wallet instance
         const wallet = Wallet.TestNet();
-        const anchor = wallet.anchor({ homeDomain: MGI_ACCESS_HOST });
+
+        // Create keypair for authentication
+        const authKeypair = SigningKeypair.fromSecret(authSecretKey);
+        console.log('Auth Public Key:', authKeypair.publicKey);
+
+        // Authenticate with the configured anchor
+        const anchor = wallet.anchor({ homeDomain: ANCHOR_HOST });
         
-        // Create sep10 object to handle authentication
+        // Perform SEP-10 authentication
         const sep10 = await anchor.sep10();
-        
-        // Create authentication keypair
-        const authKey = SigningKeypair.fromSecret(authSecretKey);
-        console.log('Auth Public Key:', authKey.publicKey);
-        
-        // Authenticate using the library method
-        const authToken = await sep10.authenticate({ accountKp: authKey });
-        
-        console.log('SEP-10 Auth with MoneyGram successful');
+        const authToken = await sep10.authenticate({ accountKp: authKeypair });
+
+        console.log(`SEP-10 Auth with ${ANCHOR_HOST} successful`);
         return authToken;
     } catch (error) {
-        console.error('Error en autenticación MoneyGram:', error);
+        console.error(`Error authenticating with ${ANCHOR_HOST}:`, error);
         throw error;
     }
-}; 
+} 

@@ -31,6 +31,7 @@
 - `authenticateWithMoneyGram()`: Perform SEP-10 authentication
 
 ### 4. MoneyGram Transactions (`src/lib/moneygram/transactions.ts`)
+
 **Responsibility**: SEP-24 withdrawals with MoneyGram
 - Initiate withdrawal transactions
 - Monitor transaction statuses
@@ -39,6 +40,7 @@
 **Key Functions**:
 - `initiateMoneyGramWithdrawal()`: Initiates withdrawal
 - `monitorMoneyGramTransaction()`: Monitors transaction status
+
 
 ## API Endpoints
 
@@ -65,8 +67,17 @@
 /api/moneygram/status?transactionId=abc123
 ```
 
+
 ### 4. `/api/moneygram` (POST)
 **Purpose**: Full flow (account creation + withdrawal)
+
+```json
+{
+  "amount": "100",
+  "userId": "user123"
+}
+```
+
 ```json
 {
   "pin": "1234",
@@ -74,6 +85,7 @@
   "userId": "user123"
 }
 ```
+
 
 ## Configuration
 
@@ -91,6 +103,7 @@ MONEYGRAM_FUNDS_SECRET_KEY=your_funds_secret_key
 - Stellar settings (URLs, USDC config, etc.)
 - MoneyGram settings (testnet/production)
 - App-wide configuration
+
 
 ## Full Transaction Flow
 
@@ -116,6 +129,7 @@ MONEYGRAM_FUNDS_SECRET_KEY=your_funds_secret_key
    - Send USDC to MoneyGram account
    - Include required memo
 
+
 ## Architecture Benefits
 
 ### ✅ Modularity
@@ -133,6 +147,7 @@ MONEYGRAM_FUNDS_SECRET_KEY=your_funds_secret_key
 - Centralized configuration
 - New features are easy to integrate
 
+
 ### ✅ Flexibility
 - Use individual endpoints or the full flow
 - Easily switch between testnet and production
@@ -140,8 +155,10 @@ MONEYGRAM_FUNDS_SECRET_KEY=your_funds_secret_key
 
 ## Next Steps
 
+
 1. **Testing**: Add unit tests for each module
 2. **WebSockets**: Implement real-time monitoring
 3. **Logging**: Add structured logging
 4. **Metrics**: Include performance metrics
 5. **Documentation**: Document API with OpenAPI/Swagger
+

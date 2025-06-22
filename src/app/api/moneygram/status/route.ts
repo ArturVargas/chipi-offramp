@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateWithMoneyGram } from "@/lib/moneygram/auth";
-import { monitorMoneyGramTransaction } from "@/lib/moneygram/transactions";
+import { getTransactionStatus } from "@/lib/moneygram/transactions";
 
 export async function GET(request: NextRequest) {
     try {
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
         const authToken = await authenticateWithMoneyGram(authSecretKey);
 
         // Obtener estado de la transacción
-        const transactionInfo = await monitorMoneyGramTransaction(authToken, transactionId);
+        const transactionInfo = await getTransactionStatus(authToken, transactionId);
 
         return NextResponse.json({
             success: true,
