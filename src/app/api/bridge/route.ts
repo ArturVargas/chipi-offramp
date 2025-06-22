@@ -32,11 +32,13 @@ export async function POST(req: NextRequest) {
       console.log(`🔍 Revisando eventos de bloque ${fromBlock} a ${latestBlock}, encontrados: ${events.length}`);
 
       for (const event of events) {
-        console.log("🧾 Evento:", event.args);
-        if (event.args && event.args.to.toLowerCase() === wallet.address.toLowerCase()) {
-          const amountUSDC = ethers.formatUnits(event.args.amount, 6);
+        console.log("🧾 Evento:", event);
+        // Cast to EventLog to access args property
+        const eventLog = event as ethers.EventLog;
+        if (eventLog.args && eventLog.args.to.toLowerCase() === wallet.address.toLowerCase()) {
+          const amountUSDC = ethers.formatUnits(eventLog.args.amount, 6);
           const stellarTo = process.env.STELLAR_DESTINATION!;
-          console.log(`🔔 ${amountUSDC} USDC detectado desde ${event.args.from}`);
+          console.log(`🔔 ${amountUSDC} USDC detectado desde ${eventLog.args.from}`);
 
           try {
             const result = await sendUSDCStellar(stellarTo, amountUSDC);
