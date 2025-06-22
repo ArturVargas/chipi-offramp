@@ -35,10 +35,13 @@
 - Iniciar transacciones de retiro
 - Monitorear estado de transacciones
 - Manejar callbacks de estado
+- Polling robusto con timeout
 
 **Funciones principales**:
 - `initiateMoneyGramWithdrawal()`: Inicia retiro
 - `monitorMoneyGramTransaction()`: Monitorea transacción
+- `getTransactionStatus()`: Obtiene estado actual
+- `getTransactionsForAsset()`: Lista todas las transacciones
 
 ## Endpoints API
 
@@ -65,8 +68,37 @@
 /api/moneygram/status?transactionId=abc123
 ```
 
-### 4. `/api/moneygram` (POST)
-**Propósito**: Flujo completo (crear cuenta + retiro)
+### 4. `/api/moneygram/webview` (POST)
+**Propósito**: Start Webview flow with MoneyGram
+```json
+{
+  "amount": "100",
+  "userId": "user123"
+}
+```
+
+**Respuesta:**
+```json
+{
+  "success": true,
+  "transactionId": "abc123",
+  "webviewUrl": "https://extstellar.moneygram.com?...",
+  "instructions": {
+    "openInWebview": true,
+    "listenForPostMessage": true,
+    "expectedStatus": "pending_user_transfer_start"
+  }
+}
+```
+
+### 5. `/api/moneygram/webview` (GET)
+**Propósito**: Verify status after postMessage
+```
+/api/moneygram/webview?transactionId=abc123
+```
+
+### 6. `/api/moneygram` (POST)
+**Propósito**: Full Flow (crear cuenta + retiro)
 ```json
 {
   "pin": "1234",
@@ -74,6 +106,52 @@
   "userId": "user123"
 }
 ```
+
+
+### 1. **Flujo con Webview (Recomendado)**
+```mermaid
+sequenceDiagram
+    participant App as Aplicación
+    participant API as API Backend
+    participant MG as MoneyGram
+    participant WebView as WebView
+
+    App->>API: POST /api/moneygram/webview
+    API->>MG: Autenticación SEP-10
+    API->>MG: Iniciar retiro SEP-24
+    API-->>App: transactionId + webviewUrl
+    App->>WebView: Abrir webview
+    WebView->>MG: Usuario completa KYC
+    MG->>WebView: postMessage (pending_user_transfer_start)
+    WebView->>App: Cerrar webview
+    App->>API: GET /api/moneygram/webview?transactionId
+    API->>MG: Obtener estado final
+    API-->>App: Estado + detalles de transferencia
+    App->>API: Enviar USDC
+```
+
+### 2. **Flujo Automático (Sin Webview)**
+```mermaid
+sequenceDiagram
+    participant App as Aplicación
+    participant API as API Backend
+    participant MG as MoneyGram
+
+    App->>API: POST /api/moneygram
+    API->>MG: Autenticación SEP-10
+    API->>MG: Iniciar retiro SEP-24
+    API->>MG: Polling hasta pending_user_transfer_start
+    API->>MG: Enviar USDC
+    API-->>App: Transacción completada
+```
+
+## Estados de Transacción MoneyGram
+
+1. **`incomplete`** - Transacción iniciada, procesando
+2. **`pending_user_transfer_start`** - ✅ **Listo para recibir USDC**
+3. **`pending_user_transfer_complete`** - USDC recibido, procesando
+4. **`completed`** - ✅ **Transacción completada**
+5. **`error`** - ❌ **Error en la transacción**
 
 ## Configuración
 
@@ -92,29 +170,18 @@ MONEYGRAM_FUNDS_SECRET_KEY=your_funds_secret_key
 - Configuración de MoneyGram (testnet/producción)
 - Configuración de la aplicación
 
-## Flujo de Transacción Completo
+## Execution Sequence
 
-1. **Crear Cuenta Stellar**
-   - Generar keypair
-   - Fondear con XLM mínimo
-   - Crear trustline USDC
-   - Encriptar clave privada
+### **Flujo con Webview (Recomendado para UX)**
+1. **Iniciar webview**: `POST /api/moneygram/webview`
+2. **Abrir webview**: Usar componente `MoneyGramWebView`
+3. **Esperar postMessage**: Usuario completa KYC
+4. **Verificar estado**: `GET /api/moneygram/webview?transactionId`
+5. **Enviar USDC**: Usar endpoint de pagos
 
-2. **Autenticar con MoneyGram**
-   - Autenticación SEP-10
-   - Obtener token de autenticación
-
-3. **Iniciar Retiro**
-   - Crear transacción SEP-24
-   - Obtener ID y URL de transacción
-
-4. **Monitorear Estado**
-   - Esperar estado "pending_user_transfer_start"
-   - Obtener cuenta destino y memo
-
-5. **Enviar USDC**
-   - Enviar USDC a cuenta de MoneyGram
-   - Incluir memo requerido
+### **Flujo Automático (Para testing)**
+1. **Flujo completo**: `POST /api/moneygram`
+2. **Monitorear estado**: `GET /api/moneygram/status?transactionId`
 
 ## Beneficios de la Arquitectura
 
@@ -135,8 +202,8 @@ MONEYGRAM_FUNDS_SECRET_KEY=your_funds_secret_key
 
 ### ✅ Flexibilidad
 - Puedes usar endpoints individuales o el flujo completo
+- Soporte para webview y flujo automático
 - Fácil cambiar entre testnet y producción
-- Configuración dinámica
 
 ## Próximos Pasos
 
@@ -144,4 +211,5 @@ MONEYGRAM_FUNDS_SECRET_KEY=your_funds_secret_key
 2. **WebSockets**: Implementar monitoreo en tiempo real
 3. **Logging**: Agregar sistema de logs estructurado
 4. **Métricas**: Implementar métricas de performance
-5. **Documentación**: Documentar APIs con OpenAPI/Swagger 
+5. **Documentación**: Documentar APIs con OpenAPI/Swagger
+6. **UI/UX**: Mejorar la experiencia del webview 

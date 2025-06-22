@@ -16,67 +16,76 @@ export interface CreateAccountResult {
 // Stellar configuration
 const STELLAR_SERVER_URL = 'https://horizon-testnet.stellar.org';
 const NETWORK_PASSPHRASE = Networks.TESTNET;
-const MINIMUM_BALANCE = '2';
+const MINIMUM_BALANCE = '2'; // Starting balance in XLM
 
 // USDC configuration
 const USDC_ISSUER = 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5'; // Testnet
-const USDC_ASSET = 'USDC';
+const USDC_ASSET_CODE = 'USDC';
+const USDC_ASSET = new Asset(USDC_ASSET_CODE, USDC_ISSUER);
 
 /**
- * Creates a new Stellar account, funds it and sets the trustline for USDC
+ * Creates a new Stellar account, funds it and sets the trustline for USDC in a single transaction
  */
 export const createStellarAccountWithTrustline = async (pin: string, funderSecretKey: string): Promise<CreateAccountResult> => {
     try {
         // 1. Create keypair for the new account
-        const stellarKeypair = StellarKeypair.random();
-        const stellarPublicKey = stellarKeypair.publicKey();
-        const stellarSecret = stellarKeypair.secret();
+        const newAccountKeypair = StellarKeypair.random();
+        const newAccountPublicKey = newAccountKeypair.publicKey();
+        const newAccountSecret = newAccountKeypair.secret();
         
-        console.log("Creating Stellar account:", stellarPublicKey);
+        console.log("Stellar Public Key for new account:", newAccountPublicKey);
 
         // 2. Encrypt private key
-        const encryptedStellarPrivateKey = CryptoJS.AES.encrypt(stellarSecret, pin).toString();
+        const encryptedStellarPrivateKey = CryptoJS.AES.encrypt(newAccountSecret, pin).toString();
 
-        // 3. Create and fund the account
+        // 3. Get the funder account from secret key
         const server = new Horizon.Server(STELLAR_SERVER_URL);
         const funderKeypair = StellarKeypair.fromSecret(funderSecretKey);
-        
         const funderAccount = await server.loadAccount(funderKeypair.publicKey());
 
-        const createAccountTransaction = new TransactionBuilder(funderAccount, {
+        // 4. Build the transaction with two operations
+        const transaction = new TransactionBuilder(funderAccount, {
             fee: BASE_FEE,
             networkPassphrase: NETWORK_PASSPHRASE,
         })
+            // First operation: create the account
             .addOperation(Operation.createAccount({
-                destination: stellarPublicKey,
-                startingBalance: MINIMUM_BALANCE,
+                destination: newAccountPublicKey,
+                startingBalance: MINIMUM_BALANCE, // This is in XLM
+            }))
+            // Second operation: create the trustline for USDC
+            // This operation must be sourced by the new account
+            .addOperation(Operation.changeTrust({
+                asset: USDC_ASSET,
+                source: newAccountPublicKey, // The new account is the source
             }))
             .setTimeout(30)
             .build();
 
-        createAccountTransaction.sign(funderKeypair);
-        const createResult = await server.submitTransaction(createAccountTransaction);
-        console.log('Account created and funded:', createResult.hash);
+        // 5. Sign the transaction with both keypairs
+        transaction.sign(funderKeypair); // Funder signs for the creation
+        transaction.sign(newAccountKeypair); // New account signs for the trustline
 
-        // 4. Create trustline for USDC
-        await createUSDCTrustline(server, stellarKeypair);
+        // 6. Submit the transaction
+        const result = await server.submitTransaction(transaction);
+        console.log('Account created and trustline set:', result.hash);
 
         const stellarWallet: StellarWalletData = {
-            publicKey: stellarPublicKey,
+            publicKey: newAccountPublicKey,
             encryptedPrivateKey: encryptedStellarPrivateKey,
         };
 
         return {
             success: true,
             stellar: stellarWallet,
-            transactionHash: createResult.hash
+            transactionHash: result.hash
         };
 
     } catch (error) {
-        console.error('Error creando cuenta Stellar:', error);
+        console.error('Error creating Stellar account with trustline:', error);
         return {
             success: false,
-            error: error instanceof Error ? error.message : 'Error desconocido'
+            error: error instanceof Error ? error.message : 'Unknown error'
         };
     }
 };
@@ -84,10 +93,10 @@ export const createStellarAccountWithTrustline = async (pin: string, funderSecre
 /**
  * Creates the trustline for USDC in an existing account
  */
-const createUSDCTrustline = async (server: Horizon.Server, keypair: StellarKeypair): Promise<void> => {
+/* const createUSDCTrustline = async (server: Horizon.Server, keypair: StellarKeypair): Promise<void> => {
     try {
         const account = await server.loadAccount(keypair.publicKey());
-        const usdcAsset = new Asset(USDC_ASSET, USDC_ISSUER);
+        const usdcAsset = new Asset(USDC_ASSET_CODE, USDC_ISSUER);
         
         const trustlineTransaction = new TransactionBuilder(account, {
             fee: BASE_FEE,
@@ -107,4 +116,4 @@ const createUSDCTrustline = async (server: Horizon.Server, keypair: StellarKeypa
         console.error('Error creando trustline USDC:', error);
         throw error;
     }
-}; 
+}; */

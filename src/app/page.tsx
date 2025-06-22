@@ -12,6 +12,13 @@ export default function LandingPage() {
           <div className="flex items-center">
             <h1 className="text-2xl font-bold text-purple-600">Chipi Pay</h1>
           </div>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/test"
+              className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md transition-colors"
+            >
+              Test MoneyGram
+            </Link>
           <SignedOut>
             <SignUpButton
               mode="modal"
@@ -26,6 +33,7 @@ export default function LandingPage() {
               <Link href="/dashboard">Go to Dashboard</Link>
             </button>
           </SignedIn>
+          </div>
         </div>
       </header>
 
