@@ -21,6 +21,11 @@ It bridges **USDC tokens** from Arbitrum to Stellar using the [Allbridge Core](h
 3. On Stellar, the funds are routed through a custodial address that integrates with **MoneyGram Access**.
 4. The user receives a pickup code and can withdraw the funds at a MoneyGram location.
 
+## 📐 Architecture
+
+For a detailed overview of the system architecture, check out the [Architecture Documentation](./ARCHITECTURE.md).
+
+
 ## 🌐 Tech Stack
 
 - **Next.js (API Routes)** – for backend logic.
